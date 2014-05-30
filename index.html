@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title>Quotes</title>
-  <link type="text/css" rel="stylesheet" href="css/main.css" />
+  <link type="text/css" rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div id="container">Loading quote...</div>
@@ -37,9 +37,10 @@
         this.quotes = new QuoteCollection();
         this.quotes.fetch();
         this.quotes.bind('reset', this.render, this);
+        $('body').bind('keydown', this.logKey);
       },
-      
-      render: function(){
+
+      getQuote: function(){
         try {
           // get random quote
           var randomIndex = getRandomInt(0,this.quotes.length-1);
@@ -48,6 +49,17 @@
           $('#container').html(quoteText);
         }
         catch (e) {}
+      },
+
+      logKey: function(e){
+        if ((e.keyCode == 39) || (e.keyCode == 37)) {
+          // get new quote
+          appView.getQuote();
+        }
+      },
+      
+      render: function(){
+        this.getQuote();
       }
     });
 
