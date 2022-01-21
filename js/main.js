@@ -4,48 +4,70 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-var Quote = Backbone.Model.extend({
-  body:'quote body here'
-});
+function getRandomQuote(data) {
+  let randomIndex = getRandomInt(0, data.length-1);
+  let quoteText = data[randomIndex].body;
+  currentIndex = randomIndex;
+  return quoteText.replace(/(?:\r\n|\r|\n)/g, '<br>');
+}
 
-var QuoteCollection = Backbone.Collection.extend({
-  model: Quote,
-  url: 'data/quotes.json',
-  parse: function(response){
-    return response;
+function getQuote(data, index) {
+  let quoteText = data[index].body;
+  currentIndex = index;
+  return quoteText.replace(/(?:\r\n|\r|\n)/g, '<br>');
+}
+
+function getPreviousQuote() {
+  let quote = getQuote(quoteData, quoteHistory.length-1);
+  quoteHistory.pop();
+  return quote;
+}
+
+function getNextQuote() {
+  return getRandomQuote(quoteData);
+}
+
+document.addEventListener('keydown', function(e) {
+  // Previous Quote
+  if ((e.keyCode == 37) && (quoteHistory.length > 0)) {
+    let quote = getPreviousQuote();
+    container.innerHTML = quote;
+  }
+  // Next Quote
+  if (e.keyCode == 39) {
+    let quote = getNextQuote();
+    quoteHistory.push(currentIndex);
+    container.innerHTML = quote;
   }
 });
 
-var AppView = Backbone.View.extend({
-  initialize: function(){
-    this.quotes = new QuoteCollection();
-    this.quotes.fetch();
-    this.quotes.bind('reset', this.render, this);
-    $('body').bind('keydown', this.logKey);
-  },
+let container = document.getElementById('container');
+let currentIndex = 0;
+let quoteData = [];
+let quoteHistory = [];
+container.innerHTML = 'Loading quote...';
 
-  getQuote: function(){
-    try {
-      // get random quote
-      var randomIndex = getRandomInt(0,this.quotes.length-1);
-      var quoteText = this.quotes.at(randomIndex).get("body");
-      quoteText = quoteText.replace(/(?:\r\n|\r|\n)/g, '<br>');
-      $('#container').html(quoteText);
-    }
-    catch (e) {}
-  },
-
-  logKey: function(e){
-    if ((e.keyCode == 39) || (e.keyCode == 37)) {
-      // get new quote
-      appView.getQuote();
-    }
-  },
-  
-  render: function(){
-    this.getQuote();
+// ref: https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState
+document.onreadystatechange = function() {
+  if (document.readyState === 'complete') {
+    // ref: https://developer.mozilla.org/en-US/docs/Web/API/Request
+    fetch('/apps/quotes/data/quotes.json')
+      .then(res => {
+        if (res.status === 200) {
+          return res.json();
+        } else {
+          throw new Error('Could not get quotes data.');
+        }
+      })
+      .then(function(data) {
+        quoteData = data;
+        container.innerHTML = getRandomQuote(data);
+      })
+      .catch(function(e) {
+        console.log('There was an error getting quotes data.');
+      });
   }
-});
+}
 
-// initialize view
-var appView = new AppView();
+// #TODO: In case where going "next" and then "previous", can't seem to
+// get back to starting quote -- it seems to be okay if going "next" "next"
